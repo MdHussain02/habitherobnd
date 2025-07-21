@@ -50,7 +50,6 @@ class Profile(models.Model):
     gender = models.CharField(max_length=20, choices=GENDER_CHOICES, null=True, blank=True)
     weight = models.FloatField(null=True, blank=True)
     height = models.FloatField(null=True, blank=True)
-    mobile_number = models.CharField(max_length=15, null=True, blank=True)
     fitness_level = models.CharField(max_length=20, choices=FITNESS_LEVEL_CHOICES, null=True, blank=True)
     motivation_level = models.CharField(max_length=20, choices=MOTIVATION_LEVEL_CHOICES, null=True, blank=True)
     notifications = models.BooleanField(default=True)
@@ -58,24 +57,14 @@ class Profile(models.Model):
     primary_goal = models.CharField(max_length=30, choices=PRIMARY_GOAL_CHOICES, null=True, blank=True)
     sleep_time = models.TimeField(null=True, blank=True)
     wake_up_time = models.TimeField(null=True, blank=True)
-    weekly_goal = models.PositiveIntegerField(null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
-# # Signal to create profile when a user is created
-# @receiver(post_save, sender=User)
-# def create_user_profile(sender, instance, created, **kwargs):
-#     if created:
-#         Profile.objects.create(user=instance)
 
-# # Signal to save profile when user is saved
-# @receiver(post_save, sender=User)
-# def save_user_profile(sender, instance, **kwargs):
-#     if hasattr(instance, 'profile'):
-#         instance.profile.save()
 
 class Habit(models.Model):
     name = models.CharField(max_length=255)

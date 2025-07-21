@@ -6,41 +6,48 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = [
-            'name', 'age', 'gender', 'weight', 'height', 'mobile_number',
+            'name', 'age', 'gender', 'weight', 'height',
             'fitness_level', 'motivation_level', 'notifications',
             'preferred_workout_time', 'primary_goal', 'sleep_time',
-            'wake_up_time', 'weekly_goal'
+            'wake_up_time'
         ]
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer()
     password = serializers.CharField(write_only=True)
-    confirmPassword = serializers.CharField(write_only=True, required=False)
+    confirmPassword = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = [
-            'id', 'username', 'email', 'password', 'confirmPassword', 'profile'
-        ]
+        fields = ['id', 'email', 'password', 'confirmPassword', 'profile']
         extra_kwargs = {
             'password': {'write_only': True},
         }
 
     def validate(self, data):
+        # Check if passwords match
         if data.get('password') != data.get('confirmPassword'):
-            raise serializers.ValidationError("Passwords don't match")
+            raise serializers.ValidationError({"confirmPassword": "Passwords don't match"})
+        
+        # Check for duplicate email (username) during creation
+        if not self.instance:  # Only for create, not update
+            email = data.get('email')
+            if email and User.objects.filter(username=email).exists():
+                raise serializers.ValidationError({"email": "A user with this email already exists."})
+        
         return data
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
-        validated_data.pop('confirmPassword', None)
-        
+        validated_data.pop('confirmPassword')
+        email = validated_data['email']
+
+        # Create user with email as username
         user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data.get('email', ''),
+            username=email,
+            email=email,
             password=validated_data['password']
         )
-        
         Profile.objects.create(user=user, **profile_data)
         return user
 
@@ -48,8 +55,9 @@ class UserSerializer(serializers.ModelSerializer):
         profile_data = validated_data.pop('profile', {})
         profile = instance.profile
 
-        instance.username = validated_data.get('username', instance.username)
         instance.email = validated_data.get('email', instance.email)
+        if 'password' in validated_data:
+            instance.set_password(validated_data['password'])
         instance.save()
 
         for field, value in profile_data.items():
@@ -57,6 +65,7 @@ class UserSerializer(serializers.ModelSerializer):
         profile.save()
 
         return instance
+
 
 class HabitSerializer(serializers.ModelSerializer):
     class Meta:
